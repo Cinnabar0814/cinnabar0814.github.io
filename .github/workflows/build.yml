@@ -26,11 +26,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # 安装 pnpm
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -39,10 +44,10 @@ jobs:
 
       # 构建服务端前先构建前端
       - name: Install Frontend Dependencies
-        run: npm install
+        run: pnpm install
 
       - name: Build Frontend (for Go Embed)
-        run: npm run build
+        run: pnpm run build
 
       - name: Compile Go Server
         shell: bash
@@ -75,20 +80,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # 安装 pnpm
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Install Dependencies
-        run: npm install
+        run: pnpm install
 
       - name: Build Frontend (for Electron)
-        run: npm run build
+        run: pnpm run build
 
       - name: Build Electron App
-        run: npm run build:electron -- --${{ matrix.platform }}
+        # 注意: pnpm 传参不需要额外的 --
+        run: pnpm run build:electron --${{ matrix.platform }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
