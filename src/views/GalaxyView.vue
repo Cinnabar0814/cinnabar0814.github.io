@@ -162,7 +162,7 @@
           <div
             v-for="slot in systemSlots"
             :key="slot.position"
-            class="flex items-center gap-2 sm:gap-4 p-2 sm:p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+            class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 p-2 sm:p-3 border rounded-lg hover:bg-muted/50 transition-colors"
             :class="{
               // 空位置
               'bg-muted/30': !slot.planet,
@@ -192,38 +192,81 @@
                 (!getRelation(slot.planet) || getRelation(slot.planet)?.status === RelationStatus.Neutral)
             }"
           >
-            <!-- 位置编号 -->
-            <div class="w-8 sm:w-12 text-center">
-              <Badge variant="outline" class="text-xs sm:text-sm">{{ slot.position }}</Badge>
-            </div>
-
-            <!-- 星球信息 -->
-            <div class="flex-1 min-w-0">
-              <div v-if="slot.planet" class="space-y-1">
-                <!-- 移动端：垂直布局 / PC端：水平布局 -->
-                <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                  <!-- 星球名称和坐标 -->
-                  <div class="flex items-baseline gap-1.5 min-w-0">
-                    <h3 class="font-semibold text-sm sm:text-base truncate">{{ slot.planet.name }}</h3>
-                    <span class="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0 sm:hidden">
-                      [{{ slot.planet.position.galaxy }}:{{ slot.planet.position.system }}:{{ slot.planet.position.position }}]
-                    </span>
+            <!-- 移动端布局 -->
+            <div class="sm:hidden w-full space-y-2">
+              <!-- 第一行：位置编号 + 星球信息（名称、坐标、状态、残骸） -->
+              <div class="flex items-start gap-2 w-full">
+                <!-- 位置编号 -->
+                <div class="w-8 text-center flex-shrink-0">
+                  <Badge variant="outline" class="text-xs">{{ slot.position }}</Badge>
+                </div>
+                <!-- 星球信息 -->
+                <div class="flex-1 min-w-0">
+                  <div v-if="slot.planet" class="space-y-1">
+                    <!-- 第一行：名称、坐标、状态、残骸 -->
+                    <div class="flex items-center gap-1.5 min-w-0 flex-wrap">
+                      <h3 class="font-semibold text-sm truncate">{{ slot.planet.name }}</h3>
+                      <span class="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0">
+                        [{{ slot.planet.position.galaxy }}:{{ slot.planet.position.system }}:{{ slot.planet.position.position }}]
+                      </span>
+                      <Badge v-if="isMyPlanet(slot.planet)" variant="default" class="text-xs flex-shrink-0">
+                        {{ t('galaxyView.mine') }}
+                      </Badge>
+                      <Badge v-else :variant="getRelationBadgeVariant(slot.planet)" class="text-xs flex-shrink-0">
+                        {{ getRelationStatusText(slot.planet) }}
+                      </Badge>
+                      <Popover v-if="getDebrisFieldAt(currentGalaxy, currentSystem, slot.position)">
+                        <PopoverTrigger as-child>
+                          <Badge
+                            variant="outline"
+                            class="text-xs cursor-pointer hover:bg-amber-50 dark:hover:bg-amber-950/30 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 gap-1"
+                          >
+                            <Recycle class="h-3 w-3" />
+                          </Badge>
+                        </PopoverTrigger>
+                        <PopoverContent class="w-auto p-3" side="top" align="start">
+                          <div class="space-y-2">
+                            <p class="text-xs font-semibold text-amber-700 dark:text-amber-400">{{ t('galaxyView.debrisField') }}</p>
+                            <div class="space-y-1 text-xs">
+                              <div class="flex items-center gap-2">
+                                <ResourceIcon type="metal" size="sm" />
+                                <span class="text-muted-foreground">{{ t('resources.metal') }}:</span>
+                                <span class="font-medium">
+                                  {{ formatNumber(getDebrisFieldAt(currentGalaxy, currentSystem, slot.position)!.resources.metal) }}
+                                </span>
+                              </div>
+                              <div class="flex items-center gap-2">
+                                <ResourceIcon type="crystal" size="sm" />
+                                <span class="text-muted-foreground">{{ t('resources.crystal') }}:</span>
+                                <span class="font-medium">
+                                  {{ formatNumber(getDebrisFieldAt(currentGalaxy, currentSystem, slot.position)!.resources.crystal) }}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    <!-- 第二行：好感度 -->
+                    <div v-if="!isMyPlanet(slot.planet) && getReputationValue(slot.planet) !== null" class="text-xs">
+                      <span class="text-muted-foreground">{{ t('diplomacy.reputation') }}:</span>
+                      <span class="ml-1 font-semibold" :class="getReputationColor(getReputationValue(slot.planet))">
+                        {{ getReputationValue(slot.planet)! > 0 ? '+' : '' }}{{ getReputationValue(slot.planet) }}
+                      </span>
+                    </div>
                   </div>
-                  <!-- 徽章组 -->
-                  <div class="flex items-center gap-2 flex-wrap">
-                    <Badge v-if="isMyPlanet(slot.planet)" variant="default" class="text-xs">{{ t('galaxyView.mine') }}</Badge>
-                    <Badge v-else :variant="getRelationBadgeVariant(slot.planet)" class="text-xs">
-                      {{ getRelationStatusText(slot.planet) }}
-                    </Badge>
-                    <!-- 残骸场徽章 - 紧凑显示 -->
+                  <!-- 空位置 -->
+                  <div v-else class="space-y-1">
+                    <div class="text-sm text-muted-foreground">{{ t('galaxyView.emptySlot') }}</div>
+                    <!-- 残骸场徽章 - 空位置时也显示 -->
                     <Popover v-if="getDebrisFieldAt(currentGalaxy, currentSystem, slot.position)">
                       <PopoverTrigger as-child>
                         <Badge
                           variant="outline"
-                          class="text-xs cursor-pointer hover:bg-amber-50 dark:hover:bg-amber-950/30 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 gap-1"
+                          class="text-xs cursor-pointer hover:bg-amber-50 dark:hover:bg-amber-950/30 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 gap-1 inline-flex"
                         >
                           <Recycle class="h-3 w-3" />
-                          <span class="hidden sm:inline">{{ t('galaxyView.debris') }}</span>
+                          <span>{{ t('galaxyView.debris') }}</span>
                         </Badge>
                       </PopoverTrigger>
                       <PopoverContent class="w-auto p-3" side="top" align="start">
@@ -250,59 +293,195 @@
                     </Popover>
                   </div>
                 </div>
-                <!-- PC端：显示坐标 -->
-                <p class="text-xs text-muted-foreground hidden sm:block">
-                  [{{ slot.planet.position.galaxy }}:{{ slot.planet.position.system }}:{{ slot.planet.position.position }}]
-                </p>
-                <!-- 好感度显示（仅NPC星球） -->
-                <div v-if="!isMyPlanet(slot.planet) && getReputationValue(slot.planet) !== null" class="text-xs">
-                  <span class="text-muted-foreground">{{ t('diplomacy.reputation') }}:</span>
-                  <span class="ml-1 font-semibold" :class="getReputationColor(getReputationValue(slot.planet))">
-                    {{ getReputationValue(slot.planet)! > 0 ? '+' : '' }}{{ getReputationValue(slot.planet) }}
-                  </span>
-                </div>
               </div>
-              <!-- 空位置 -->
-              <div v-else class="space-y-1">
-                <div class="text-sm text-muted-foreground">{{ t('galaxyView.emptySlot') }}</div>
-                <!-- 残骸场徽章 - 空位置时也显示 -->
-                <Popover v-if="getDebrisFieldAt(currentGalaxy, currentSystem, slot.position)">
-                  <PopoverTrigger as-child>
-                    <Badge
-                      variant="outline"
-                      class="text-xs cursor-pointer hover:bg-amber-50 dark:hover:bg-amber-950/30 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 gap-1 inline-flex"
-                    >
-                      <Recycle class="h-3 w-3" />
-                      <span>{{ t('galaxyView.debris') }}</span>
-                    </Badge>
-                  </PopoverTrigger>
-                  <PopoverContent class="w-auto p-3" side="top" align="start">
-                    <div class="space-y-2">
-                      <p class="text-xs font-semibold text-amber-700 dark:text-amber-400">{{ t('galaxyView.debrisField') }}</p>
-                      <div class="space-y-1 text-xs">
-                        <div class="flex items-center gap-2">
-                          <ResourceIcon type="metal" size="sm" />
-                          <span class="text-muted-foreground">{{ t('resources.metal') }}:</span>
-                          <span class="font-medium">
-                            {{ formatNumber(getDebrisFieldAt(currentGalaxy, currentSystem, slot.position)!.resources.metal) }}
-                          </span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                          <ResourceIcon type="crystal" size="sm" />
-                          <span class="text-muted-foreground">{{ t('resources.crystal') }}:</span>
-                          <span class="font-medium">
-                            {{ formatNumber(getDebrisFieldAt(currentGalaxy, currentSystem, slot.position)!.resources.crystal) }}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </PopoverContent>
-                </Popover>
+
+              <!-- 第三行：操作按钮 -->
+              <div class="flex gap-1 pl-10">
+                <TooltipProvider :delay-duration="300">
+                  <Tooltip v-if="slot.planet && !isMyPlanet(slot.planet)">
+                    <TooltipTrigger as-child>
+                      <Button @click="showPlanetActions(slot.planet, 'spy')" variant="outline" size="sm" class="h-8 w-8 p-0">
+                        <Eye class="h-3 w-3" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{{ t('galaxyView.scout') }}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip v-if="slot.planet && !isMyPlanet(slot.planet)">
+                    <TooltipTrigger as-child>
+                      <Button @click="showPlanetActions(slot.planet, 'attack')" variant="outline" size="sm" class="h-8 w-8 p-0">
+                        <Sword class="h-3 w-3" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{{ t('galaxyView.attack') }}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip v-if="slot.planet && !isMyPlanet(slot.planet) && hasInterplanetaryMissiles">
+                    <TooltipTrigger as-child>
+                      <Button @click="showMissileAttackDialog(slot.planet)" variant="outline" size="sm" class="h-8 w-8 p-0">
+                        <Bomb class="h-3 w-3" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{{ t('galaxyView.missileAttack') }}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip v-if="slot.planet && !isMyPlanet(slot.planet) && getPlanetNPC(slot.planet)">
+                    <TooltipTrigger as-child>
+                      <Button @click="showPlanetActions(slot.planet, 'gift')" variant="outline" size="sm" class="h-8 w-8 p-0">
+                        <Gift class="h-3 w-3" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{{ t('galaxyView.sendGift') }}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip v-if="!slot.planet">
+                    <TooltipTrigger as-child>
+                      <Button @click="showPlanetActions(null, 'colonize', slot.position)" variant="outline" size="sm" class="h-8 w-8 p-0">
+                        <Rocket class="h-3 w-3" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{{ t('galaxyView.colonize') }}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip v-if="slot.planet && isMyPlanet(slot.planet)">
+                    <TooltipTrigger as-child>
+                      <Button @click="switchToPlanet(slot.planet.id)" variant="outline" size="sm" class="h-8 w-8 p-0">
+                        <Home class="h-3 w-3" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{{ t('galaxyView.switch') }}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip v-if="getDebrisFieldAt(currentGalaxy, currentSystem, slot.position)">
+                    <TooltipTrigger as-child>
+                      <Button
+                        @click="showPlanetActions(slot.planet, 'recycle', slot.position)"
+                        variant="outline"
+                        size="sm"
+                        class="h-8 w-8 p-0"
+                      >
+                        <Recycle class="h-3 w-3" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{{ t('galaxyView.recycle') }}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             </div>
 
-            <!-- 操作按钮 -->
-            <div class="flex gap-1 sm:gap-2 flex-shrink-0">
+            <!-- PC端布局：位置编号 + 星球信息（水平） -->
+            <div class="hidden sm:flex items-center gap-4 flex-1 min-w-0">
+              <!-- 位置编号 -->
+              <div class="w-12 text-center flex-shrink-0">
+                <Badge variant="outline" class="text-sm">{{ slot.position }}</Badge>
+              </div>
+
+              <!-- 星球信息 -->
+              <div class="flex-1 min-w-0">
+                <div v-if="slot.planet" class="space-y-1">
+                  <!-- PC端：标题和徽章 -->
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <h3 class="font-semibold text-base">{{ slot.planet.name }}</h3>
+                    <Badge v-if="isMyPlanet(slot.planet)" variant="default" class="text-xs">{{ t('galaxyView.mine') }}</Badge>
+                    <Badge v-else :variant="getRelationBadgeVariant(slot.planet)" class="text-xs">
+                      {{ getRelationStatusText(slot.planet) }}
+                    </Badge>
+                    <!-- 残骸场徽章 -->
+                    <Popover v-if="getDebrisFieldAt(currentGalaxy, currentSystem, slot.position)">
+                      <PopoverTrigger as-child>
+                        <Badge
+                          variant="outline"
+                          class="text-xs cursor-pointer hover:bg-amber-50 dark:hover:bg-amber-950/30 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 gap-1"
+                        >
+                          <Recycle class="h-3 w-3" />
+                          <span>{{ t('galaxyView.debris') }}</span>
+                        </Badge>
+                      </PopoverTrigger>
+                      <PopoverContent class="w-auto p-3" side="top" align="start">
+                        <div class="space-y-2">
+                          <p class="text-xs font-semibold text-amber-700 dark:text-amber-400">{{ t('galaxyView.debrisField') }}</p>
+                          <div class="space-y-1 text-xs">
+                            <div class="flex items-center gap-2">
+                              <ResourceIcon type="metal" size="sm" />
+                              <span class="text-muted-foreground">{{ t('resources.metal') }}:</span>
+                              <span class="font-medium">
+                                {{ formatNumber(getDebrisFieldAt(currentGalaxy, currentSystem, slot.position)!.resources.metal) }}
+                              </span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                              <ResourceIcon type="crystal" size="sm" />
+                              <span class="text-muted-foreground">{{ t('resources.crystal') }}:</span>
+                              <span class="font-medium">
+                                {{ formatNumber(getDebrisFieldAt(currentGalaxy, currentSystem, slot.position)!.resources.crystal) }}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <!-- PC端：坐标 -->
+                  <p class="text-xs text-muted-foreground">
+                    [{{ slot.planet.position.galaxy }}:{{ slot.planet.position.system }}:{{ slot.planet.position.position }}]
+                  </p>
+                  <!-- PC端：好感度显示（仅NPC星球） -->
+                  <div v-if="!isMyPlanet(slot.planet) && getReputationValue(slot.planet) !== null" class="text-xs">
+                    <span class="text-muted-foreground">{{ t('diplomacy.reputation') }}:</span>
+                    <span class="ml-1 font-semibold" :class="getReputationColor(getReputationValue(slot.planet))">
+                      {{ getReputationValue(slot.planet)! > 0 ? '+' : '' }}{{ getReputationValue(slot.planet) }}
+                    </span>
+                  </div>
+                </div>
+                <!-- 空位置 -->
+                <div v-else class="space-y-1">
+                  <div class="text-sm text-muted-foreground">{{ t('galaxyView.emptySlot') }}</div>
+                  <!-- 残骸场徽章 - 空位置时也显示 -->
+                  <Popover v-if="getDebrisFieldAt(currentGalaxy, currentSystem, slot.position)">
+                    <PopoverTrigger as-child>
+                      <Badge
+                        variant="outline"
+                        class="text-xs cursor-pointer hover:bg-amber-50 dark:hover:bg-amber-950/30 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 gap-1 inline-flex"
+                      >
+                        <Recycle class="h-3 w-3" />
+                        <span>{{ t('galaxyView.debris') }}</span>
+                      </Badge>
+                    </PopoverTrigger>
+                    <PopoverContent class="w-auto p-3" side="top" align="start">
+                      <div class="space-y-2">
+                        <p class="text-xs font-semibold text-amber-700 dark:text-amber-400">{{ t('galaxyView.debrisField') }}</p>
+                        <div class="space-y-1 text-xs">
+                          <div class="flex items-center gap-2">
+                            <ResourceIcon type="metal" size="sm" />
+                            <span class="text-muted-foreground">{{ t('resources.metal') }}:</span>
+                            <span class="font-medium">
+                              {{ formatNumber(getDebrisFieldAt(currentGalaxy, currentSystem, slot.position)!.resources.metal) }}
+                            </span>
+                          </div>
+                          <div class="flex items-center gap-2">
+                            <ResourceIcon type="crystal" size="sm" />
+                            <span class="text-muted-foreground">{{ t('resources.crystal') }}:</span>
+                            <span class="font-medium">
+                              {{ formatNumber(getDebrisFieldAt(currentGalaxy, currentSystem, slot.position)!.resources.crystal) }}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+            </div>
+
+            <!-- 操作按钮 (PC端) -->
+            <div class="hidden sm:flex gap-1 sm:gap-2 flex-shrink-0">
               <TooltipProvider :delay-duration="300">
                 <Tooltip v-if="slot.planet && !isMyPlanet(slot.planet)">
                   <TooltipTrigger as-child>
@@ -322,6 +501,16 @@
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>{{ t('galaxyView.attack') }}</p>
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip v-if="slot.planet && !isMyPlanet(slot.planet) && hasInterplanetaryMissiles">
+                  <TooltipTrigger as-child>
+                    <Button @click="showMissileAttackDialog(slot.planet)" variant="outline" size="sm" class="h-8 w-8 p-0">
+                      <Bomb class="h-3 w-3 sm:h-4 sm:w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{{ t('galaxyView.missileAttack') }}</p>
                   </TooltipContent>
                 </Tooltip>
                 <Tooltip v-if="slot.planet && !isMyPlanet(slot.planet) && getPlanetNPC(slot.planet)">
@@ -376,6 +565,60 @@
       </CardContent>
     </Card>
 
+    <!-- 导弹攻击对话框 -->
+    <Dialog :open="missileDialogOpen" @update:open="missileDialogOpen = $event">
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{{ t('galaxyView.missileAttackTitle') }}</DialogTitle>
+          <DialogDescription v-if="missileTargetPlanet">
+            {{
+              t('galaxyView.missileAttackMessage').replace(
+                '{coordinates}',
+                `${missileTargetPlanet.position.galaxy}:${missileTargetPlanet.position.system}:${missileTargetPlanet.position.position}`
+              )
+            }}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div v-if="gameStore.currentPlanet && missileTargetPlanet" class="space-y-4">
+          <!-- 导弹数量输入 -->
+          <div class="space-y-2">
+            <Label>{{ t('galaxyView.missileCount') }}</Label>
+            <Input
+              v-model.number="missileCount"
+              type="number"
+              min="1"
+              :max="gameStore.currentPlanet.defense['interplanetaryMissile'] || 0"
+            />
+            <p class="text-sm text-muted-foreground">
+              {{ t('galaxyView.availableMissiles') }}: {{ gameStore.currentPlanet.defense['interplanetaryMissile'] || 0 }}
+            </p>
+          </div>
+
+          <!-- 射程和距离信息 -->
+          <div class="space-y-2 text-sm">
+            <div class="flex justify-between">
+              <span class="text-muted-foreground">{{ t('galaxyView.missileRange') }}:</span>
+              <span>{{ calculateMissileRange() }} {{ t('galaxyView.systems') }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-muted-foreground">{{ t('galaxyView.distance') }}:</span>
+              <span>{{ calculateDistance(missileTargetPlanet) }} {{ t('galaxyView.systems') }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-muted-foreground">{{ t('galaxyView.flightTime') }}:</span>
+              <span>{{ formatFlightTime(calculateDistance(missileTargetPlanet)) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" @click="missileDialogOpen = false">{{ t('galaxyView.cancel') }}</Button>
+          <Button @click="launchMissileAttack">{{ t('galaxyView.launchMissile') }}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
     <!-- 快速派遣对话框 -->
     <AlertDialog :open="alertDialogOpen" @update:open="alertDialogOpen = $event">
       <AlertDialogContent>
@@ -405,10 +648,12 @@
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
   import { Button } from '@/components/ui/button'
   import { Label } from '@/components/ui/label'
+  import { Input } from '@/components/ui/input'
   import { Badge } from '@/components/ui/badge'
   import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
   import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
   import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
+  import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
   import {
     AlertDialog,
     AlertDialogAction,
@@ -420,7 +665,7 @@
     AlertDialogTitle
   } from '@/components/ui/alert-dialog'
   import ResourceIcon from '@/components/ResourceIcon.vue'
-  import { Home, Eye, Sword, Rocket, Recycle, Gift, Globe } from 'lucide-vue-next'
+  import { Home, Eye, Sword, Rocket, Recycle, Gift, Globe, Bomb } from 'lucide-vue-next'
   import { useRouter, useRoute } from 'vue-router'
   import * as gameLogic from '@/logic/gameLogic'
   import { formatNumber } from '@/utils/format'
@@ -437,6 +682,11 @@
   const alertDialogTitle = ref('')
   const alertDialogMessage = ref('')
   const alertDialogConfirmAction = ref<(() => void) | null>(null)
+
+  // 导弹攻击对话框状态
+  const missileDialogOpen = ref(false)
+  const missileTargetPlanet = ref<Planet | null>(null)
+  const missileCount = ref(1)
 
   const selectedGalaxy = ref(1)
   const selectedSystem = ref(1)
@@ -463,6 +713,12 @@
   // 获取玩家所有非月球星球
   const myPlanets = computed(() => {
     return gameStore.player.planets.filter(p => !p.isMoon)
+  })
+
+  // 检查当前星球是否有星际导弹
+  const hasInterplanetaryMissiles = computed(() => {
+    if (!gameStore.currentPlanet) return false
+    return (gameStore.currentPlanet.defense['interplanetaryMissile'] || 0) > 0
   })
 
   // 判断当前是否在母星所在星系
@@ -679,5 +935,81 @@
       })
     }
     alertDialogOpen.value = true
+  }
+
+  // 显示导弹攻击对话框
+  const showMissileAttackDialog = (planet: Planet) => {
+    missileTargetPlanet.value = planet
+    missileCount.value = 1
+    missileDialogOpen.value = true
+  }
+
+  // 执行导弹攻击
+  const launchMissileAttack = () => {
+    if (!missileTargetPlanet.value || !gameStore.currentPlanet) return
+
+    // 导入missileLogic进行验证和执行
+    import('@/logic/missileLogic').then(missileLogic => {
+      const validation = missileLogic.validateMissileLaunch(
+        gameStore.currentPlanet!,
+        missileTargetPlanet.value!.position,
+        missileCount.value,
+        gameStore.player.technologies
+      )
+
+      if (!validation.valid) {
+        alertDialogTitle.value = t('errors.launchFailed')
+        alertDialogMessage.value = t(validation.reason || 'errors.unknown')
+        alertDialogOpen.value = true
+        return
+      }
+
+      // 创建导弹攻击任务
+      const missileAttack = missileLogic.createMissileAttack(
+        gameStore.player.id,
+        gameStore.currentPlanet!,
+        missileTargetPlanet.value!.position,
+        missileTargetPlanet.value!.id,
+        missileCount.value
+      )
+
+      // 扣除导弹
+      missileLogic.executeMissileLaunch(gameStore.currentPlanet!, missileCount.value)
+
+      // 添加到玩家的导弹攻击列表
+      gameStore.player.missileAttacks.push(missileAttack)
+
+      // 关闭对话框
+      missileDialogOpen.value = false
+
+      // 显示成功提示
+      alertDialogTitle.value = t('common.success')
+      alertDialogMessage.value = t('galaxyView.missileLaunched')
+      alertDialogOpen.value = true
+    })
+  }
+
+  // 计算导弹射程
+  const calculateMissileRange = () => {
+    const impulseDriveLevel = gameStore.player.technologies['impulseDrive'] || 0
+    if (impulseDriveLevel === 0) return 0
+    return 5 * impulseDriveLevel - 1
+  }
+
+  // 计算到目标的距离
+  const calculateDistance = (target: Planet) => {
+    if (!gameStore.currentPlanet) return 0
+    const from = gameStore.currentPlanet.position
+    const to = target.position
+    if (from.galaxy !== to.galaxy) return Infinity
+    return Math.abs(from.system - to.system)
+  }
+
+  // 格式化飞行时间
+  const formatFlightTime = (distance: number) => {
+    const seconds = 30 + distance * 60
+    const minutes = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${minutes}:${secs.toString().padStart(2, '0')}`
   }
 </script>

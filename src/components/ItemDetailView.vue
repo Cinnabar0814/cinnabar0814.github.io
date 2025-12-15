@@ -15,23 +15,37 @@
             <TableHead v-if="type === 'building' && showProductionColumn" class="text-center">{{ t('buildings.production') }}</TableHead>
             <TableHead v-if="type === 'building' && showConsumptionColumn" class="text-center">{{ t('buildings.consumption') }}</TableHead>
             <TableHead v-if="type === 'building' && showCapacityColumn" class="text-center">{{ t('buildings.storageCapacity') }}</TableHead>
-            <TableHead v-if="type === 'building' && showFleetStorageColumn" class="text-center">{{ t('buildings.fleetStorage') }}</TableHead>
-            <TableHead v-if="type === 'building' && showBuildQueueColumn" class="text-center">{{ t('buildings.buildQueueBonus') }}</TableHead>
+            <TableHead v-if="type === 'building' && showFleetStorageColumn" class="text-center">
+              {{ t('buildings.fleetStorage') }}
+            </TableHead>
+            <TableHead v-if="type === 'building' && showBuildQueueColumn" class="text-center">
+              {{ t('buildings.buildQueueBonus') }}
+            </TableHead>
             <TableHead v-if="type === 'building' && showSpaceColumn" class="text-center">{{ t('buildings.spaceBonus') }}</TableHead>
             <TableHead v-if="type === 'building' && showMissileColumn" class="text-center">{{ t('buildings.missileCapacity') }}</TableHead>
-            <TableHead v-if="type === 'building' && showBuildSpeedColumn" class="text-center">{{ t('buildings.buildSpeedBonus') }}</TableHead>
-            <TableHead v-if="type === 'building' && showResearchSpeedColumn" class="text-center">{{ t('buildings.researchSpeedBonus') }}</TableHead>
+            <TableHead v-if="type === 'building' && showBuildSpeedColumn" class="text-center">
+              {{ t('buildings.buildSpeedBonus') }}
+            </TableHead>
+            <TableHead v-if="type === 'building' && showResearchSpeedColumn" class="text-center">
+              {{ t('buildings.researchSpeedBonus') }}
+            </TableHead>
             <!-- 科技相关列 -->
             <TableHead v-if="type === 'technology' && showAttackBonusColumn" class="text-center">{{ t('research.attackBonus') }}</TableHead>
             <TableHead v-if="type === 'technology' && showShieldBonusColumn" class="text-center">{{ t('research.shieldBonus') }}</TableHead>
             <TableHead v-if="type === 'technology' && showArmorBonusColumn" class="text-center">{{ t('research.armorBonus') }}</TableHead>
             <TableHead v-if="type === 'technology' && showSpyLevelColumn" class="text-center">{{ t('research.spyLevel') }}</TableHead>
-            <TableHead v-if="type === 'technology' && showFleetStorageColumn" class="text-center">{{ t('buildings.fleetStorage') }}</TableHead>
-            <TableHead v-if="type === 'technology' && showResearchQueueColumn" class="text-center">{{ t('research.researchQueueBonus') }}</TableHead>
+            <TableHead v-if="type === 'technology' && showFleetStorageColumn" class="text-center">
+              {{ t('buildings.fleetStorage') }}
+            </TableHead>
+            <TableHead v-if="type === 'technology' && showResearchQueueColumn" class="text-center">
+              {{ t('research.researchQueueBonus') }}
+            </TableHead>
             <TableHead v-if="type === 'technology' && showColonySlotsColumn" class="text-center">{{ t('research.colonySlots') }}</TableHead>
             <TableHead v-if="type === 'technology' && showSpaceColumn" class="text-center">{{ t('buildings.spaceBonus') }}</TableHead>
             <TableHead v-if="type === 'technology' && showSpeedBonusColumn" class="text-center">{{ t('research.speedBonus') }}</TableHead>
-            <TableHead v-if="type === 'technology' && showResearchSpeedColumn" class="text-center">{{ t('buildings.researchSpeedBonus') }}</TableHead>
+            <TableHead v-if="type === 'technology' && showResearchSpeedColumn" class="text-center">
+              {{ t('buildings.researchSpeedBonus') }}
+            </TableHead>
             <TableHead class="text-center">{{ t('player.points') }}</TableHead>
           </TableRow>
         </TableHeader>
@@ -78,7 +92,8 @@
             </TableCell>
             <TableCell v-if="type === 'building' && showFleetStorageColumn" class="text-center text-sm">
               <span v-if="getLevelData(level).fleetStorage > 0" class="text-blue-600 dark:text-blue-400">
-                +<NumberWithTooltip :value="getLevelData(level).fleetStorage" />
+                +
+                <NumberWithTooltip :value="getLevelData(level).fleetStorage" />
               </span>
               <span v-else>-</span>
             </TableCell>
@@ -87,7 +102,8 @@
             </TableCell>
             <TableCell v-if="type === 'building' && showSpaceColumn" class="text-center text-sm">
               <span v-if="getLevelData(level).spaceBonus > 0" class="text-green-600 dark:text-green-400">
-                +<NumberWithTooltip :value="getLevelData(level).spaceBonus" />
+                +
+                <NumberWithTooltip :value="getLevelData(level).spaceBonus" />
               </span>
               <span v-else>-</span>
             </TableCell>
@@ -95,8 +111,12 @@
               <span class="text-orange-600 dark:text-orange-400">+10</span>
             </TableCell>
             <TableCell v-if="type === 'building' && showBuildSpeedColumn" class="text-center text-sm">
-              <span v-if="itemType === 'roboticsFactory'" class="text-cyan-600 dark:text-cyan-400">+{{ getLevelData(level).buildSpeedBonus * 100 }}%</span>
-              <span v-else-if="itemType === 'naniteFactory'" class="text-cyan-600 dark:text-cyan-400">+{{ getLevelData(level).buildSpeedBonus * 100 }}%</span>
+              <span v-if="itemType === 'roboticsFactory'" class="text-cyan-600 dark:text-cyan-400">
+                +{{ getLevelData(level).buildSpeedBonus * 100 }}%
+              </span>
+              <span v-else-if="itemType === 'naniteFactory'" class="text-cyan-600 dark:text-cyan-400">
+                +{{ getLevelData(level).buildSpeedBonus * 100 }}%
+              </span>
             </TableCell>
             <TableCell v-if="type === 'building' && showResearchSpeedColumn" class="text-center text-sm">
               <span class="text-indigo-600 dark:text-indigo-400">+{{ (getLevelData(level).researchSpeedBonus - 1) * 100 }}%</span>
@@ -115,7 +135,10 @@
               <span class="text-purple-600 dark:text-purple-400">+{{ level }}</span>
             </TableCell>
             <TableCell v-if="type === 'technology' && showFleetStorageColumn" class="text-center text-sm">
-              <span class="text-blue-600 dark:text-blue-400">+<NumberWithTooltip :value="level * 500" /></span>
+              <span class="text-blue-600 dark:text-blue-400">
+                +
+                <NumberWithTooltip :value="level * 500" />
+              </span>
             </TableCell>
             <TableCell v-if="type === 'technology' && showResearchQueueColumn" class="text-center text-sm">
               <span class="text-purple-600 dark:text-purple-400">+1</span>
@@ -124,7 +147,7 @@
               <span class="text-green-600 dark:text-green-400">+1</span>
             </TableCell>
             <TableCell v-if="type === 'technology' && showSpaceColumn" class="text-center text-sm">
-              <span class="text-green-600 dark:text-green-400">+5 {{ t('research.forAllPlanets') }}</span>
+              <span class="text-green-600 dark:text-green-400">+30 {{ t('research.forAllPlanets') }}</span>
             </TableCell>
             <TableCell v-if="type === 'technology' && showSpeedBonusColumn" class="text-center text-sm">
               <span class="text-yellow-600 dark:text-yellow-400">+{{ level * 10 }}%</span>
@@ -275,7 +298,12 @@
           <CardTitle class="text-sm">{{ t(`${typeKey}.buildCost`) }}</CardTitle>
         </CardHeader>
         <CardContent class="space-y-2">
-          <div v-for="resourceType in costResourceTypes" :key="resourceType.key" v-show="unitCost[resourceType.key] > 0" class="flex items-center justify-between text-sm">
+          <div
+            v-for="resourceType in costResourceTypes"
+            :key="resourceType.key"
+            v-show="unitCost[resourceType.key] > 0"
+            class="flex items-center justify-between text-sm"
+          >
             <span class="text-muted-foreground">{{ t(`resources.${resourceType.key}`) }}:</span>
             <span class="font-medium"><NumberWithTooltip :value="unitCost[resourceType.key]" /></span>
           </div>
@@ -311,9 +339,17 @@
           <div class="space-y-2">
             <p class="text-sm text-muted-foreground">{{ t(`${typeKey}.totalCost`) }}:</p>
             <div class="space-y-1 text-sm">
-              <div v-for="resourceType in costResourceTypes" :key="resourceType.key" class="flex justify-between">
-                <span>{{ t(`resources.${resourceType.key}`) }}:</span>
-                <span class="font-medium"><NumberWithTooltip :value="batchCost[resourceType.key]" /></span>
+              <div class="flex justify-between">
+                <span>{{ t('resources.metal') }}:</span>
+                <span class="font-medium"><NumberWithTooltip :value="batchCost.metal" /></span>
+              </div>
+              <div class="flex justify-between">
+                <span>{{ t('resources.crystal') }}:</span>
+                <span class="font-medium"><NumberWithTooltip :value="batchCost.crystal" /></span>
+              </div>
+              <div class="flex justify-between">
+                <span>{{ t('resources.deuterium') }}:</span>
+                <span class="font-medium"><NumberWithTooltip :value="batchCost.deuterium" /></span>
               </div>
             </div>
           </div>
@@ -654,9 +690,9 @@
       } else if (buildingType === 'shipyard') {
         fleetStorage = 1000 * level
       } else if (buildingType === 'terraformer') {
-        spaceBonus = 5
+        spaceBonus = 30
       } else if (buildingType === 'lunarBase') {
-        spaceBonus = 5
+        spaceBonus = 30
       } else if (buildingType === 'roboticsFactory') {
         buildSpeedBonus = level
       } else if (buildingType === 'naniteFactory') {
@@ -685,7 +721,18 @@
       }
 
       const points = pointsLogic.calculateTechnologyPoints(techType, level - 1, level)
-      return { cost, time, production: 0, consumption: 0, points, capacity: 0, fleetStorage: 0, spaceBonus: 0, buildSpeedBonus: 0, researchSpeedBonus }
+      return {
+        cost,
+        time,
+        production: 0,
+        consumption: 0,
+        points,
+        capacity: 0,
+        fleetStorage: 0,
+        spaceBonus: 0,
+        buildSpeedBonus: 0,
+        researchSpeedBonus
+      }
     }
   }
 

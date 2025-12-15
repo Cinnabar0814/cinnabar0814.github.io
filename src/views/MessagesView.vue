@@ -580,7 +580,8 @@
       [MissionType.Colonize]: t('fleetView.colonize'),
       [MissionType.Deploy]: t('fleetView.deploy'),
       [MissionType.Recycle]: t('fleetView.recycle'),
-      [MissionType.Destroy]: t('fleetView.destroy')
+      [MissionType.Destroy]: t('fleetView.destroy'),
+      [MissionType.MissileAttack]: t('galaxyView.missileAttack')
     }
     return typeMap[missionType] || missionType
   }
@@ -615,7 +616,7 @@
   const acceptGift = (gift: GiftNotification) => {
     const npc = npcStore.npcs.find(n => n.id === gift.fromNpcId)
     if (npc) {
-      diplomaticLogic.acceptNPCGift(gameStore.player, npc, gift)
+      diplomaticLogic.acceptNPCGift(gameStore.player, npc, gift, gameStore.locale)
     }
   }
 
@@ -623,7 +624,7 @@
   const rejectGift = (gift: GiftNotification) => {
     const npc = npcStore.npcs.find(n => n.id === gift.fromNpcId)
     if (npc) {
-      diplomaticLogic.rejectNPCGift(gameStore.player, npc, gift)
+      diplomaticLogic.rejectNPCGift(gameStore.player, npc, gift, gameStore.locale)
     }
   }
 

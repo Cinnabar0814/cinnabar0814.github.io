@@ -23,6 +23,14 @@ export const validateBuildingUpgrade = (
   const cost = buildingLogic.calculateBuildingCost(buildingType, targetLevel)
   const buildingConfig = BUILDINGS[buildingType]
 
+  // 检查队列中是否已存在该建筑的升级或拆除任务
+  const existingQueueItem = planet.buildQueue.find(
+    item => (item.type === 'building' || item.type === 'demolish') && item.itemType === buildingType
+  )
+  if (existingQueueItem) {
+    return { valid: false, reason: 'errors.buildingAlreadyInQueue' }
+  }
+
   // 检查星球/月球限制
   if (buildingConfig.planetOnly && planet.isMoon) {
     return { valid: false, reason: 'errors.planetOnly' }

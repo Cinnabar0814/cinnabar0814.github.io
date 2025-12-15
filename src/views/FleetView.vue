@@ -332,7 +332,7 @@
   import { useNPCStore } from '@/stores/npcStore'
   import { useI18n } from '@/composables/useI18n'
   import { useGameConfig } from '@/composables/useGameConfig'
-  import { computed, ref, onMounted, onUnmounted } from 'vue'
+  import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
   import { ShipType, MissionType, BuildingType } from '@/types/game'
   import type { Fleet, Resources } from '@/types/game'
@@ -472,6 +472,13 @@
 
   // 是否为赠送模式
   const isGiftMode = ref(false)
+
+  // 监听目标NPC变化，当目标不再是NPC时自动禁用赠送模式
+  watch(targetNpc, newValue => {
+    if (!newValue && isGiftMode.value) {
+      isGiftMode.value = false
+    }
+  })
 
   // 计算赠送的预估好感度增加值
   const calculateGiftReputation = (): number => {

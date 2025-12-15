@@ -5,6 +5,7 @@
  */
 
 import { DIPLOMATIC_CONFIG } from '@/config/gameConfig'
+import { locales, type Locale } from '@/locales'
 import type {
   DiplomaticRelation,
   RelationStatus,
@@ -20,6 +21,37 @@ import type {
   GiftRejectedNotification
 } from '@/types/game'
 import { RelationStatus as RS, DiplomaticEventType as DET } from '@/types/game'
+
+/**
+ * 获取翻译文本的辅助函数
+ * @param key 翻译键
+ * @param locale 语言代码
+ * @param params 参数
+ * @returns 翻译后的文本
+ */
+const t = (key: string, locale: Locale, params?: Record<string, string | number>): string => {
+  const keys = key.split('.')
+  let value: any = locales[locale]
+
+  for (const k of keys) {
+    if (value && typeof value === 'object' && k in value) {
+      value = value[k]
+    } else {
+      return key // 如果找不到翻译，返回原始 key
+    }
+  }
+
+  let result = typeof value === 'string' ? value : key
+
+  // 替换参数占位符
+  if (params) {
+    Object.entries(params).forEach(([paramKey, paramValue]) => {
+      result = result.replace(new RegExp(`\\{${paramKey}\\}`, 'g'), String(paramValue))
+    })
+  }
+
+  return result
+}
 
 /**
  * 根据好感度值计算关系状态
@@ -118,8 +150,11 @@ export const calculateGiftReputationGain = (resources: Resources): number => {
   const baseGain = REPUTATION_CHANGES.GIFT_BASE
   const valueGain = Math.floor(totalValue / 1000) * REPUTATION_CHANGES.GIFT_PER_1K_RESOURCES
 
+  // 确保达到门槛的礼物至少获得1点好感度
+  const totalGain = Math.max(baseGain + valueGain, 1)
+
   // 限制在最大值范围内
-  return Math.min(baseGain + valueGain, REPUTATION_CHANGES.GIFT_MAX_SINGLE)
+  return Math.min(totalGain, REPUTATION_CHANGES.GIFT_MAX_SINGLE)
 }
 
 /**
@@ -173,16 +208,22 @@ export const calculateNPCRejectionProbability = (npc: NPC, player: Player): numb
  * @param mission 舰队任务
  * @param player 玩家
  * @param targetNpc 目标NPC
+ * @param locale 语言代码
  * @returns { accepted: boolean, reputationGain?: number }
  */
-export const handleGiftArrival = (mission: FleetMission, player: Player, targetNpc: NPC): { accepted: boolean; reputationGain?: number } => {
+export const handleGiftArrival = (
+  mission: FleetMission,
+  player: Player,
+  targetNpc: NPC,
+  locale: Locale
+): { accepted: boolean; reputationGain?: number } => {
   // 计算NPC拒绝概率
   const rejectionProb = calculateNPCRejectionProbability(targetNpc, player)
   const isRejected = Math.random() < rejectionProb
 
   if (isRejected) {
     // NPC拒绝礼物
-    handleGiftRejection(player, targetNpc, mission.cargo)
+    handleGiftRejection(player, targetNpc, mission.cargo, locale)
     return { accepted: false }
   }
 
@@ -200,7 +241,11 @@ export const handleGiftArrival = (mission: FleetMission, player: Player, targetN
     relation,
     reputationGain,
     DET.GiftResources,
-    `Gifted ${mission.cargo.metal}M ${mission.cargo.crystal}C ${mission.cargo.deuterium}D`
+    t('diplomacy.reports.giftedResources', locale, {
+      metal: mission.cargo.metal.toString(),
+      crystal: mission.cargo.crystal.toString(),
+      deuterium: mission.cargo.deuterium.toString()
+    })
   )
 
   // 也更新NPC对玩家的关系（双向好感度）
@@ -209,7 +254,12 @@ export const handleGiftArrival = (mission: FleetMission, player: Player, targetN
   }
 
   const npcRelation = getOrCreateRelation(targetNpc.relations, targetNpc.id, player.id)
-  targetNpc.relations[player.id] = updateReputation(npcRelation, reputationGain, DET.GiftResources, `Received gift from player`)
+  targetNpc.relations[player.id] = updateReputation(
+    npcRelation,
+    reputationGain,
+    DET.GiftResources,
+    t('diplomacy.reports.receivedGiftFromPlayer', locale)
+  )
 
   // 生成外交报告
   generateDiplomaticReport(
@@ -217,7 +267,7 @@ export const handleGiftArrival = (mission: FleetMission, player: Player, targetN
     targetNpc,
     DET.GiftResources,
     reputationGain,
-    `You gifted resources to ${targetNpc.name}. Reputation +${reputationGain}`
+    t('diplomacy.reports.giftedToNpc', locale, { npcName: targetNpc.name, reputation: reputationGain.toString() })
   )
 
   return { accepted: true, reputationGain }
@@ -228,8 +278,9 @@ export const handleGiftArrival = (mission: FleetMission, player: Player, targetN
  * @param player 玩家
  * @param npc NPC
  * @param rejectedResources 被拒绝的资源
+ * @param locale 语言代码
  */
-const handleGiftRejection = (player: Player, npc: NPC, rejectedResources: Resources): void => {
+const handleGiftRejection = (player: Player, npc: NPC, rejectedResources: Resources, locale: Locale): void => {
   const { GIFT_ACCEPTANCE_CONFIG } = DIPLOMATIC_CONFIG
 
   // 创建拒绝通知
@@ -268,7 +319,7 @@ const handleGiftRejection = (player: Player, npc: NPC, rejectedResources: Resour
     npcRelation,
     GIFT_ACCEPTANCE_CONFIG.REJECTION_REPUTATION_PENALTY,
     DET.GiftResources,
-    `Rejected player's gift`
+    t('diplomacy.reports.rejectedPlayerGift', locale)
   )
 
   // 生成外交报告
@@ -277,7 +328,10 @@ const handleGiftRejection = (player: Player, npc: NPC, rejectedResources: Resour
     npc,
     DET.GiftResources,
     GIFT_ACCEPTANCE_CONFIG.REJECTION_REPUTATION_PENALTY,
-    `${npc.name} rejected your gift. Reputation ${GIFT_ACCEPTANCE_CONFIG.REJECTION_REPUTATION_PENALTY}`
+    t('diplomacy.reports.npcRejectedGift', locale, {
+      npcName: npc.name,
+      reputation: GIFT_ACCEPTANCE_CONFIG.REJECTION_REPUTATION_PENALTY.toString()
+    })
   )
 }
 
@@ -287,8 +341,15 @@ const handleGiftRejection = (player: Player, npc: NPC, rejectedResources: Resour
  * @param defender 防御者（NPC）
  * @param battleResult 战斗结果
  * @param allNpcs 所有NPC列表
+ * @param locale 语言代码
  */
-export const handleAttackReputation = (attacker: Player, defender: NPC, battleResult: BattleResult, allNpcs: NPC[]): void => {
+export const handleAttackReputation = (
+  attacker: Player,
+  defender: NPC,
+  battleResult: BattleResult,
+  allNpcs: NPC[],
+  locale: Locale
+): void => {
   const { REPUTATION_CHANGES } = DIPLOMATIC_CONFIG
 
   // 计算好感度降低值
@@ -304,7 +365,12 @@ export const handleAttackReputation = (attacker: Player, defender: NPC, battleRe
   }
 
   const relation = getOrCreateRelation(attacker.diplomaticRelations, attacker.id, defender.id)
-  attacker.diplomaticRelations[defender.id] = updateReputation(relation, -reputationLoss, DET.Attack, `Attacked ${defender.name}`)
+  attacker.diplomaticRelations[defender.id] = updateReputation(
+    relation,
+    reputationLoss,
+    DET.Attack,
+    t('diplomacy.reports.attackedNpc', locale, { npcName: defender.name })
+  )
 
   // 更新被攻击NPC对玩家的关系
   if (!defender.relations) {
@@ -312,15 +378,26 @@ export const handleAttackReputation = (attacker: Player, defender: NPC, battleRe
   }
 
   const defenderRelation = getOrCreateRelation(defender.relations, defender.id, attacker.id)
-  defender.relations[attacker.id] = updateReputation(defenderRelation, -reputationLoss, DET.Attack, `Was attacked by player`)
+  defender.relations[attacker.id] = updateReputation(
+    defenderRelation,
+    reputationLoss,
+    DET.Attack,
+    t('diplomacy.reports.wasAttackedByPlayer', locale)
+  )
 
   // 检查盟友关系网络
   if (defender.allies && defender.allies.length > 0) {
-    handleAllyAttackedReputation(attacker, defender, allNpcs)
+    handleAllyAttackedReputation(attacker, defender, allNpcs, locale)
   }
 
   // 生成外交报告
-  generateDiplomaticReport(attacker, defender, DET.Attack, -reputationLoss, `You attacked ${defender.name}`)
+  generateDiplomaticReport(
+    attacker,
+    defender,
+    DET.Attack,
+    -reputationLoss,
+    t('diplomacy.reports.youAttackedNpc', locale, { npcName: defender.name })
+  )
 }
 
 /**
@@ -328,8 +405,9 @@ export const handleAttackReputation = (attacker: Player, defender: NPC, battleRe
  * @param attacker 攻击者（玩家）
  * @param attackedNpc 被攻击的NPC
  * @param allNpcs 所有NPC列表
+ * @param locale 语言代码
  */
-export const handleAllyAttackedReputation = (attacker: Player, attackedNpc: NPC, allNpcs: NPC[]): void => {
+export const handleAllyAttackedReputation = (attacker: Player, attackedNpc: NPC, allNpcs: NPC[], locale: Locale): void => {
   const { REPUTATION_CHANGES } = DIPLOMATIC_CONFIG
 
   // 找到所有盟友
@@ -344,9 +422,9 @@ export const handleAllyAttackedReputation = (attacker: Player, attackedNpc: NPC,
     const allyRelation = getOrCreateRelation(ally.relations, ally.id, attacker.id)
     ally.relations[attacker.id] = updateReputation(
       allyRelation,
-      -REPUTATION_CHANGES.ALLY_ATTACKED,
+      REPUTATION_CHANGES.ALLY_ATTACKED,
       DET.AllyAttacked,
-      `Player attacked ally ${attackedNpc.name}`
+      t('diplomacy.reports.playerAttackedAlly', locale, { allyName: attackedNpc.name })
     )
 
     // 生成外交报告
@@ -354,8 +432,8 @@ export const handleAllyAttackedReputation = (attacker: Player, attackedNpc: NPC,
       attacker,
       ally,
       DET.AllyAttacked,
-      -REPUTATION_CHANGES.ALLY_ATTACKED,
-      `${ally.name} is displeased that you attacked their ally ${attackedNpc.name}`
+      REPUTATION_CHANGES.ALLY_ATTACKED,
+      t('diplomacy.reports.allyDispleased', locale, { allyName: ally.name, targetName: attackedNpc.name })
     )
   })
 }
@@ -365,8 +443,9 @@ export const handleAllyAttackedReputation = (attacker: Player, attackedNpc: NPC,
  * @param spy 侦查者（玩家）
  * @param target 侦查目标（NPC）
  * @param wasDetected 是否被发现
+ * @param locale 语言代码
  */
-export const handleSpyReputation = (spy: Player, target: NPC, wasDetected: boolean): void => {
+export const handleSpyReputation = (spy: Player, target: NPC, wasDetected: boolean, locale: Locale): void => {
   const { REPUTATION_CHANGES } = DIPLOMATIC_CONFIG
 
   const reputationLoss = wasDetected ? REPUTATION_CHANGES.SPY_DETECTED : REPUTATION_CHANGES.SPY_UNDETECTED
@@ -377,11 +456,16 @@ export const handleSpyReputation = (spy: Player, target: NPC, wasDetected: boole
   }
 
   const targetRelation = getOrCreateRelation(target.relations, target.id, spy.id)
-  target.relations[spy.id] = updateReputation(targetRelation, -reputationLoss, DET.Spy, `Was spied by player (detected: ${wasDetected})`)
+  target.relations[spy.id] = updateReputation(
+    targetRelation,
+    reputationLoss,
+    DET.Spy,
+    t('diplomacy.reports.wasSpiedByPlayer', locale, { detected: wasDetected ? 'true' : 'false' })
+  )
 
   // 如果被发现，生成外交报告
   if (wasDetected) {
-    generateDiplomaticReport(spy, target, DET.Spy, -reputationLoss, `Your espionage was detected by ${target.name}`)
+    generateDiplomaticReport(spy, target, DET.Spy, reputationLoss, t('diplomacy.reports.spyDetected', locale, { npcName: target.name }))
   }
 }
 
@@ -391,8 +475,9 @@ export const handleSpyReputation = (spy: Player, target: NPC, wasDetected: boole
  * @param player 玩家
  * @param debrisPosition 残骸位置
  * @param allNpcs 所有NPC列表
+ * @param locale 语言代码
  */
-export const handleDebrisRecycleReputation = (player: Player, debrisPosition: Position, allNpcs: NPC[]): void => {
+export const handleDebrisRecycleReputation = (player: Player, debrisPosition: Position, allNpcs: NPC[], locale: Locale): void => {
   const { REPUTATION_CHANGES } = DIPLOMATIC_CONFIG
 
   // 找到该位置的NPC星球所有者
@@ -414,9 +499,9 @@ export const handleDebrisRecycleReputation = (player: Player, debrisPosition: Po
     const relation = getOrCreateRelation(player.diplomaticRelations, player.id, npcOwner.id)
     player.diplomaticRelations[npcOwner.id] = updateReputation(
       relation,
-      -REPUTATION_CHANGES.STEAL_DEBRIS,
+      REPUTATION_CHANGES.STEAL_DEBRIS,
       DET.StealDebris,
-      `Stole debris from ${npcOwner.name}'s territory`
+      t('diplomacy.reports.stoleDebrisFromTerritory', locale, { npcName: npcOwner.name })
     )
 
     // 更新NPC对玩家的关系
@@ -427,9 +512,9 @@ export const handleDebrisRecycleReputation = (player: Player, debrisPosition: Po
     const npcRelation = getOrCreateRelation(npcOwner.relations, npcOwner.id, player.id)
     npcOwner.relations[player.id] = updateReputation(
       npcRelation,
-      -REPUTATION_CHANGES.STEAL_DEBRIS,
+      REPUTATION_CHANGES.STEAL_DEBRIS,
       DET.StealDebris,
-      `Player stole debris from territory`
+      t('diplomacy.reports.playerStoleDebris', locale)
     )
 
     // 生成外交报告
@@ -437,8 +522,8 @@ export const handleDebrisRecycleReputation = (player: Player, debrisPosition: Po
       player,
       npcOwner,
       DET.StealDebris,
-      -REPUTATION_CHANGES.STEAL_DEBRIS,
-      `You recycled debris near ${npcOwner.name}'s planet. They are displeased.`
+      REPUTATION_CHANGES.STEAL_DEBRIS,
+      t('diplomacy.reports.recycledDebrisNearNpc', locale, { npcName: npcOwner.name })
     )
   }
 }
@@ -539,8 +624,9 @@ export const handleNPCGiftToPlayer = (npc: NPC, player: Player, giftResources: R
  * @param player 玩家
  * @param npc NPC
  * @param giftNotification 礼物通知
+ * @param locale 语言代码
  */
-export const acceptNPCGift = (player: Player, npc: NPC, giftNotification: GiftNotification): void => {
+export const acceptNPCGift = (player: Player, npc: NPC, giftNotification: GiftNotification, locale: Locale): void => {
   // 将资源添加到玩家主星球
   if (player.planets && player.planets.length > 0) {
     const mainPlanet = player.planets[0]
@@ -558,7 +644,12 @@ export const acceptNPCGift = (player: Player, npc: NPC, giftNotification: GiftNo
   }
 
   const npcRelation = getOrCreateRelation(npc.relations, npc.id, player.id)
-  npc.relations[player.id] = updateReputation(npcRelation, giftNotification.expectedReputationGain, DET.GiftResources, `Gifted resources to player`)
+  npc.relations[player.id] = updateReputation(
+    npcRelation,
+    giftNotification.expectedReputationGain,
+    DET.GiftResources,
+    t('diplomacy.reports.giftedResourcesToPlayer', locale)
+  )
 
   // 也更新玩家对NPC的关系（收到礼物会增加好感）
   if (!player.diplomaticRelations) {
@@ -570,7 +661,7 @@ export const acceptNPCGift = (player: Player, npc: NPC, giftNotification: GiftNo
     playerRelation,
     giftNotification.expectedReputationGain,
     DET.GiftResources,
-    `Received gift from ${npc.name}`
+    t('diplomacy.reports.receivedGiftFromNpc', locale, { npcName: npc.name })
   )
 
   // 生成外交报告
@@ -579,7 +670,12 @@ export const acceptNPCGift = (player: Player, npc: NPC, giftNotification: GiftNo
     npc,
     DET.GiftResources,
     giftNotification.expectedReputationGain,
-    `You accepted a gift from ${npc.name}: ${giftNotification.resources.metal}M ${giftNotification.resources.crystal}C ${giftNotification.resources.deuterium}D`
+    t('diplomacy.reports.acceptedGiftFromNpc', locale, {
+      npcName: npc.name,
+      metal: giftNotification.resources.metal.toString(),
+      crystal: giftNotification.resources.crystal.toString(),
+      deuterium: giftNotification.resources.deuterium.toString()
+    })
   )
 
   // 移除礼物通知
@@ -593,8 +689,9 @@ export const acceptNPCGift = (player: Player, npc: NPC, giftNotification: GiftNo
  * @param player 玩家
  * @param npc NPC
  * @param giftNotification 礼物通知
+ * @param locale 语言代码
  */
-export const rejectNPCGift = (player: Player, npc: NPC, giftNotification: GiftNotification): void => {
+export const rejectNPCGift = (player: Player, npc: NPC, giftNotification: GiftNotification, locale: Locale): void => {
   const { GIFT_ACCEPTANCE_CONFIG } = DIPLOMATIC_CONFIG
 
   // 拒绝礼物会降低好感度
@@ -607,7 +704,7 @@ export const rejectNPCGift = (player: Player, npc: NPC, giftNotification: GiftNo
     npcRelation,
     GIFT_ACCEPTANCE_CONFIG.REJECTION_REPUTATION_PENALTY,
     DET.GiftResources,
-    `Player rejected gift`
+    t('diplomacy.reports.playerRejectedGift', locale)
   )
 
   // 生成外交报告
@@ -616,7 +713,10 @@ export const rejectNPCGift = (player: Player, npc: NPC, giftNotification: GiftNo
     npc,
     DET.GiftResources,
     GIFT_ACCEPTANCE_CONFIG.REJECTION_REPUTATION_PENALTY,
-    `You rejected a gift from ${npc.name}. Reputation ${GIFT_ACCEPTANCE_CONFIG.REJECTION_REPUTATION_PENALTY}`
+    t('diplomacy.reports.rejectedGiftFromNpc', locale, {
+      npcName: npc.name,
+      reputation: GIFT_ACCEPTANCE_CONFIG.REJECTION_REPUTATION_PENALTY.toString()
+    })
   )
 
   // 移除礼物通知

@@ -3,6 +3,9 @@ import { BuildingType, TechnologyType, ShipType, DefenseType } from '@/types/gam
 import { BUILDINGS } from '@/config/gameConfig'
 import * as pointsLogic from './pointsLogic'
 
+// 用于生成唯一ID的计数器
+let queueIdCounter = 0
+
 /**
  * 计算建筑升级成本
  */
@@ -102,8 +105,9 @@ export const checkSpaceAvailable = (planet: Planet, buildingType: BuildingType):
  */
 export const createBuildQueueItem = (buildingType: BuildingType, targetLevel: number, buildTime: number): BuildQueueItem => {
   const now = Date.now()
+  queueIdCounter++
   return {
-    id: `build_${now}`,
+    id: `build_${now}_${queueIdCounter}`,
     type: 'building',
     itemType: buildingType,
     targetLevel,
@@ -212,8 +216,9 @@ export const calculateDemolishTime = (
  */
 export const createDemolishQueueItem = (buildingType: BuildingType, currentLevel: number, demolishTime: number): BuildQueueItem => {
   const now = Date.now()
+  queueIdCounter++
   return {
-    id: `demolish_${now}`,
+    id: `demolish_${now}_${queueIdCounter}`,
     type: 'demolish',
     itemType: buildingType,
     targetLevel: currentLevel - 1, // 目标等级为当前等级-1

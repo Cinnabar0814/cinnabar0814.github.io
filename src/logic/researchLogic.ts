@@ -3,6 +3,9 @@ import { TechnologyType, BuildingType } from '@/types/game'
 import { TECHNOLOGIES } from '@/config/gameConfig'
 import * as pointsLogic from './pointsLogic'
 
+// 用于生成唯一ID的计数器
+let researchQueueIdCounter = 0
+
 /**
  * 计算科技研究成本
  */
@@ -77,8 +80,9 @@ export const checkTechnologyRequirements = (
  */
 export const createResearchQueueItem = (techType: TechnologyType, targetLevel: number, researchTime: number): BuildQueueItem => {
   const now = Date.now()
+  researchQueueIdCounter++
   return {
-    id: `research_${now}`,
+    id: `research_${now}_${researchQueueIdCounter}`,
     type: 'technology',
     itemType: techType,
     targetLevel,

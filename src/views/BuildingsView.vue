@@ -415,7 +415,9 @@
 ${t('buildingsView.demolishRefund')}:
 ${t('resources.metal')}: ${formatNumber(refund.metal)}
 ${t('resources.crystal')}: ${formatNumber(refund.crystal)}
-${t('resources.deuterium')}: ${formatNumber(refund.deuterium)}${refund.darkMatter > 0 ? `\n${t('resources.darkMatter')}: ${formatNumber(refund.darkMatter)}` : ''}`
+${t('resources.deuterium')}: ${formatNumber(refund.deuterium)}${
+      refund.darkMatter > 0 ? `\n${t('resources.darkMatter')}: ${formatNumber(refund.darkMatter)}` : ''
+    }`
 
     pendingDemolishBuilding.value = buildingType
     demolishConfirmOpen.value = true

@@ -19,6 +19,7 @@ export const initializePlayer = (playerId: string, playerName: string = 'Command
     officers: {} as Record<OfficerType, Officer>,
     researchQueue: [],
     fleetMissions: [],
+    missileAttacks: [],
     battleReports: [],
     spyReports: [],
     spiedNotifications: [],

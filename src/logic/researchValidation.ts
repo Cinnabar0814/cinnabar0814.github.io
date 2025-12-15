@@ -21,6 +21,14 @@ export const validateTechnologyResearch = (
   const targetLevel = currentLevel + 1
   const cost = researchLogic.calculateTechnologyCost(techType, targetLevel)
 
+  // 检查队列中是否已存在该科技的研究任务
+  const existingQueueItem = researchQueue.find(
+    item => item.type === 'technology' && item.itemType === techType
+  )
+  if (existingQueueItem) {
+    return { valid: false, reason: 'errors.technologyAlreadyInQueue' }
+  }
+
   // 检查研究队列是否已满
   const maxQueue = publicLogic.getMaxResearchQueue(technologies)
   if (researchQueue.length >= maxQueue) {

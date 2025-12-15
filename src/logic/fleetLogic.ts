@@ -1,4 +1,5 @@
 import type { FleetMission, Planet, Resources, Fleet, BattleResult, SpyReport, Player, Officer, DebrisField, NPC } from '@/types/game'
+import type { Locale } from '@/locales'
 import { ShipType, DefenseType, MissionType, BuildingType, OfficerType, TechnologyType } from '@/types/game'
 import { FLEET_STORAGE_CONFIG } from '@/config/gameConfig'
 import * as battleLogic from './battleLogic'
@@ -75,13 +76,14 @@ export const processTransportArrival = (
   mission: FleetMission,
   targetPlanet: Planet | undefined,
   player?: Player,
-  allNpcs?: NPC[]
+  allNpcs?: NPC[],
+  locale: Locale = 'zh-CN'
 ): { success: boolean; reputationGain?: number } => {
   // 检查是否是赠送任务
   if (mission.isGift && mission.giftTargetNpcId && player && allNpcs) {
     const targetNpc = allNpcs.find(n => n.id === mission.giftTargetNpcId)
     if (targetNpc) {
-      const giftResult = diplomaticLogic.handleGiftArrival(mission, player, targetNpc)
+      const giftResult = diplomaticLogic.handleGiftArrival(mission, player, targetNpc, locale)
       mission.status = 'returning'
 
       // 如果礼物被拒绝，资源返还给玩家
@@ -316,8 +318,8 @@ export const processNPCAttackArrival = async (
  * 基于天体物理学技术等级
  */
 export const calculateMaxPlanets = (astrophysicsLevel: number): number => {
-  // 基础1个星球 + 每2级天体物理学增加1个殖民地槽位
-  return 1 + Math.floor(astrophysicsLevel / 2)
+  // 基础1个星球（主星） + 每级天体物理学增加1个殖民地槽位
+  return 1 + astrophysicsLevel
 }
 
 /**
@@ -463,7 +465,8 @@ export const processSpyArrival = (
   targetPlanet: Planet | undefined,
   attacker: Player,
   defender: Player | null,
-  allNpcs?: NPC[]
+  allNpcs?: NPC[],
+  locale: Locale = 'zh-CN'
 ): SpyReport | null => {
   if (!targetPlanet) {
     mission.status = 'returning'
@@ -504,7 +507,7 @@ export const processSpyArrival = (
   if (allNpcs && targetPlanet.ownerId) {
     const targetNpc = allNpcs.find(npc => npc.planets.some(p => p.id === targetPlanet.id))
     if (targetNpc) {
-      diplomaticLogic.handleSpyReputation(attacker, targetNpc, wasDetected)
+      diplomaticLogic.handleSpyReputation(attacker, targetNpc, wasDetected, locale)
     }
   }
 
@@ -536,7 +539,8 @@ export const processRecycleArrival = (
   mission: FleetMission,
   debrisField: DebrisField | undefined,
   player?: Player,
-  allNpcs?: NPC[]
+  allNpcs?: NPC[],
+  locale: Locale = 'zh-CN'
 ): { collectedResources: Pick<Resources, 'metal' | 'crystal'>; remainingDebris: Pick<Resources, 'metal' | 'crystal'> | null } | null => {
   if (!debrisField) {
     mission.status = 'returning'
@@ -558,6 +562,12 @@ export const processRecycleArrival = (
   const totalDebris = debrisField.resources.metal + debrisField.resources.crystal
   const collectedAmount = Math.min(totalDebris, availableCapacity)
 
+  // 防止除零：如果残骸为0，直接返回
+  if (totalDebris === 0) {
+    mission.status = 'returning'
+    return null
+  }
+
   // 按比例收集金属和晶体
   const metalRatio = debrisField.resources.metal / totalDebris
   const crystalRatio = debrisField.resources.crystal / totalDebris
@@ -577,7 +587,7 @@ export const processRecycleArrival = (
 
   // 检查是否在NPC星球位置回收残骸，如果是则降低好感度
   if (player && allNpcs && collectedAmount > 0) {
-    diplomaticLogic.handleDebrisRecycleReputation(player, debrisField.position, allNpcs)
+    diplomaticLogic.handleDebrisRecycleReputation(player, debrisField.position, allNpcs, locale)
   }
 
   return {

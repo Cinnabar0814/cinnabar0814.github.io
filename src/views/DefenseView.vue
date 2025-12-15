@@ -5,6 +5,29 @@
 
     <h1 class="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6">{{ t('defenseView.title') }}</h1>
 
+    <!-- 导弹容量显示 -->
+    <div v-if="missileSiloCapacity > 0" class="mb-4 sm:mb-6 p-3 sm:p-4 bg-muted/50 rounded-lg border">
+      <div class="flex items-center justify-between">
+        <div class="text-sm sm:text-base font-medium">{{ t('defenseView.missileCapacity') }}:</div>
+        <div class="text-sm sm:text-base font-bold">
+          <span :class="currentMissileCount > missileSiloCapacity ? 'text-destructive' : 'text-primary'">
+            {{ formatNumber(currentMissileCount) }}
+          </span>
+          <span class="text-muted-foreground mx-1">/</span>
+          <span>{{ formatNumber(missileSiloCapacity) }}</span>
+        </div>
+      </div>
+      <div class="mt-2">
+        <div class="w-full bg-background rounded-full h-2.5 sm:h-3 overflow-hidden">
+          <div
+            class="h-full transition-all duration-300"
+            :class="currentMissileCount > missileSiloCapacity ? 'bg-destructive' : 'bg-primary'"
+            :style="{ width: `${Math.min((currentMissileCount / missileSiloCapacity) * 100, 100)}%` }"
+          />
+        </div>
+      </div>
+    </div>
+
     <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
       <Card v-for="defenseType in Object.values(DefenseType)" :key="defenseType" class="relative">
         <CardUnlockOverlay :requirements="DEFENSES[defenseType].requirements" />
@@ -156,12 +179,24 @@
   import { formatNumber, getResourceCostColor } from '@/utils/format'
   import * as publicLogic from '@/logic/publicLogic'
   import * as shipValidation from '@/logic/shipValidation'
+  import * as shipLogic from '@/logic/shipLogic'
 
   const gameStore = useGameStore()
   const detailDialog = useDetailDialogStore()
   const { t } = useI18n()
   const { DEFENSES } = useGameConfig()
   const planet = computed(() => gameStore.currentPlanet)
+
+  // 导弹容量相关计算
+  const missileSiloCapacity = computed(() => {
+    if (!planet.value) return 0
+    return shipLogic.calculateMissileSiloCapacity(planet.value.buildings)
+  })
+
+  const currentMissileCount = computed(() => {
+    if (!planet.value) return 0
+    return shipLogic.calculateCurrentMissileCount(planet.value.defense)
+  })
 
   // AlertDialog 状态
   const alertDialogOpen = ref(false)
@@ -197,11 +232,12 @@
   }
 
   const buildDefense = (defenseType: DefenseType, quantity: number): boolean => {
-    if (!gameStore.currentPlanet) return false
-    const validation = shipValidation.validateDefenseBuild(gameStore.currentPlanet, defenseType, quantity, gameStore.player.technologies)
+    const currentPlanet = gameStore.currentPlanet
+    if (!currentPlanet) return false
+    const validation = shipValidation.validateDefenseBuild(currentPlanet, defenseType, quantity, gameStore.player.technologies)
     if (!validation.valid) return false
-    const queueItem = shipValidation.executeDefenseBuild(gameStore.currentPlanet, defenseType, quantity, gameStore.player.officers)
-    gameStore.currentPlanet.buildQueue.push(queueItem)
+    const queueItem = shipValidation.executeDefenseBuild(currentPlanet, defenseType, quantity, gameStore.player.officers)
+    currentPlanet.buildQueue.push(queueItem)
     return true
   }
 

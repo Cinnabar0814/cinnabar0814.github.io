@@ -123,7 +123,7 @@ export const BUILDINGS: Record<BuildingType, BuildingConfig> = {
     baseTime: 30, // 减少建造时间：60→30秒
     costMultiplier: 2,
     spaceUsage: 5,
-    fleetStorageBonus: 1000, // 每级增加100舰队仓储
+    fleetStorageBonus: 1000, // 每级增加1000舰队仓储
     requirements: { [BuildingType.RoboticsFactory]: 2 },
     levelRequirements: {
       8: { [BuildingType.RoboticsFactory]: 5, [BuildingType.ResearchLab]: 5 },
@@ -251,7 +251,7 @@ export const BUILDINGS: Record<BuildingType, BuildingConfig> = {
   [BuildingType.Terraformer]: {
     id: BuildingType.Terraformer,
     name: '地形改造器',
-    description: '改造行星地形，每级增加5个可用空间',
+    description: '改造行星地形，每级增加30个可用空间',
     baseCost: { metal: 0, crystal: 50000, deuterium: 100000, darkMatter: 0, energy: 0 },
     baseTime: 60,
     costMultiplier: 2,
@@ -433,7 +433,7 @@ export const TECHNOLOGIES: Record<TechnologyType, TechnologyConfig> = {
     baseCost: { metal: 0, crystal: 400, deuterium: 600, darkMatter: 0, energy: 0 },
     baseTime: 60,
     costMultiplier: 2,
-    fleetStorageBonus: 500, // 每级全局增加50舰队仓储
+    fleetStorageBonus: 500, // 每级全局增加500舰队仓储
     maxLevel: 10, // 最多10级（最多11个研究队列）
     requirements: { [BuildingType.ResearchLab]: 1 },
     levelRequirements: {
@@ -588,7 +588,7 @@ export const TECHNOLOGIES: Record<TechnologyType, TechnologyConfig> = {
   [TechnologyType.TerraformingTechnology]: {
     id: TechnologyType.TerraformingTechnology,
     name: '地形改造技术',
-    description: '研究行星地形改造技术，每级为所有行星增加5个可用空间',
+    description: '研究行星地形改造技术，每级为所有行星增加30个可用空间',
     baseCost: { metal: 0, crystal: 20000, deuterium: 40000, darkMatter: 0, energy: 0 },
     baseTime: 90,
     costMultiplier: 2,
@@ -867,7 +867,7 @@ export const SHIPS: Record<ShipType, ShipConfig> = {
     fuelConsumption: 1,
     storageUsage: 100,
     requirements: {
-      [BuildingType.PlanetDestroyerFactory]: 10,
+      [BuildingType.PlanetDestroyerFactory]: 3,
       [TechnologyType.PlanetDestructionTech]: 7,
       [TechnologyType.HyperspaceDrive]: 7
     }
@@ -1085,15 +1085,15 @@ export const MOON_CONFIG = {
   baseChance: 1, // 基础1%概率
   maxChance: 20, // 最大20%概率
   chancePerDebris: 100000, // 每10万资源增加1%概率
-  baseSize: 60, // 月球基础空间
-  lunarBaseSpaceBonus: 5 // 每级月球基地增加的空间
+  baseSize: 100, // 月球基础空间
+  lunarBaseSpaceBonus: 30 // 每级月球基地增加的空间
 }
 
 // 行星配置
 export const PLANET_CONFIG = {
-  baseSize: 200, // 行星基础空间
-  terraformerSpaceBonus: 5, // 每级地形改造器增加的空间
-  terraformingTechSpaceBonus: 3 // 每级地形改造技术增加的空间
+  baseSize: 300, // 行星基础空间
+  terraformerSpaceBonus: 30, // 每级地形改造器增加的空间
+  terraformingTechSpaceBonus: 30 // 每级地形改造技术增加的空间
 }
 
 // 舰队仓储配置

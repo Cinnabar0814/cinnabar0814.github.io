@@ -206,7 +206,8 @@ export const MissionType = {
   Expedition: 'expedition',
   HarvestDarkMatter: 'harvestDarkMatter', // 暗物质采集
   Recycle: 'recycle', // 回收残骸
-  Destroy: 'destroy' // 行星毁灭
+  Destroy: 'destroy', // 行星毁灭
+  MissileAttack: 'missileAttack' // 导弹攻击
 } as const
 
 export type MissionType = (typeof MissionType)[keyof typeof MissionType]
@@ -282,6 +283,19 @@ export interface FleetMission {
   // 外交系统字段
   isGift?: boolean // 是否为赠送资源任务
   giftTargetNpcId?: string // 赠送目标NPC ID
+}
+
+// 导弹攻击任务（不使用舰队系统）
+export interface MissileAttack {
+  id: string
+  playerId: string
+  originPlanetId: string
+  targetPosition: { galaxy: number; system: number; position: number }
+  targetPlanetId?: string
+  missileCount: number // 发射的星际导弹数量
+  launchTime: number
+  arrivalTime: number
+  status: 'flying' | 'arrived' | 'intercepted'
 }
 
 // 战斗结果
@@ -407,6 +421,11 @@ export interface MissionReport {
     destroyedPlanetName?: string
     // 部署任务：部署的舰队
     deployedFleet?: Partial<Fleet>
+    // 导弹攻击任务：导弹信息
+    missileCount?: number
+    missileHits?: number
+    missileIntercepted?: number
+    defenseLosses?: Partial<Record<DefenseType, number>>
   }
   read?: boolean
 }
@@ -533,6 +552,7 @@ export interface Player {
   officers: Record<OfficerType, Officer>
   researchQueue: BuildQueueItem[]
   fleetMissions: FleetMission[]
+  missileAttacks: MissileAttack[] // 导弹攻击任务
   battleReports: BattleResult[]
   spyReports: SpyReport[]
   spiedNotifications: SpiedNotification[] // 被侦查通知
@@ -542,6 +562,9 @@ export interface Player {
   giftNotifications: GiftNotification[] // 礼物通知（等待接受/拒绝）
   giftRejectedNotifications: GiftRejectedNotification[] // 礼物被拒绝通知
   points: number // 总积分（每1000资源=1分）
+  isGMEnabled?: boolean // GM模式开关（默认false，通过秘籍激活）
+  lastVersionCheckTime?: number // 最后一次自动检查版本的时间戳（被动检测）
+  lastManualUpdateCheck?: number // 最后一次手动检查更新的时间戳（主动检测）
   // 外交系统字段
   diplomaticRelations?: Record<string, DiplomaticRelation> // 玩家对NPC的关系（key: npcId）
   diplomaticReports?: DiplomaticReport[] // 外交变化报告

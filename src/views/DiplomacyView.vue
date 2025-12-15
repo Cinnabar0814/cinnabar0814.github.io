@@ -12,19 +12,34 @@
       <TabsList class="grid w-full grid-cols-4">
         <TabsTrigger value="all">
           {{ t('diplomacy.tabs.all') }}
-          <Badge variant="secondary" class="ml-2">{{ allNpcs.length }}</Badge>
+          <Badge variant="outline" class="ml-2 bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700">{{ allNpcs.length }}</Badge>
         </TabsTrigger>
         <TabsTrigger value="friendly">
           {{ t('diplomacy.tabs.friendly') }}
-          <Badge variant="secondary" class="ml-2">{{ friendlyNpcs.length }}</Badge>
+          <Badge
+            variant="outline"
+            class="ml-2 bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700"
+          >
+            {{ friendlyNpcs.length }}
+          </Badge>
         </TabsTrigger>
         <TabsTrigger value="neutral">
           {{ t('diplomacy.tabs.neutral') }}
-          <Badge variant="secondary" class="ml-2">{{ neutralNpcs.length }}</Badge>
+          <Badge
+            variant="outline"
+            class="ml-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600"
+          >
+            {{ neutralNpcs.length }}
+          </Badge>
         </TabsTrigger>
         <TabsTrigger value="hostile">
           {{ t('diplomacy.tabs.hostile') }}
-          <Badge variant="secondary" class="ml-2">{{ hostileNpcs.length }}</Badge>
+          <Badge
+            variant="outline"
+            class="ml-2 bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300 border-red-300 dark:border-red-700"
+          >
+            {{ hostileNpcs.length }}
+          </Badge>
         </TabsTrigger>
       </TabsList>
 
@@ -202,7 +217,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, ref } from 'vue'
+  import { computed, ref, onMounted } from 'vue'
   import { useGameStore } from '@/stores/gameStore'
   import { useNPCStore } from '@/stores/npcStore'
   import { useI18n } from '@/composables/useI18n'
@@ -221,6 +236,52 @@
   const { t } = useI18n()
 
   const activeTab = ref('all')
+
+  // 检测并生成NPC盟友
+  const initializeNPCAllies = () => {
+    const npcs = npcStore.npcs
+    if (npcs.length < 2) return // 至少需要2个NPC才能生成盟友关系
+
+    npcs.forEach(npc => {
+      // 如果NPC没有盟友列表,初始化为空数组
+      if (!npc.allies) {
+        npc.allies = []
+      }
+
+      // 如果NPC没有盟友,随机生成1-2个盟友
+      if (npc.allies.length === 0) {
+        const otherNpcs = npcs.filter(n => n.id !== npc.id)
+        if (otherNpcs.length === 0) return
+
+        // 随机选择1-2个盟友
+        const allyCount = Math.min(Math.floor(Math.random() * 2) + 1, otherNpcs.length)
+        const shuffled = [...otherNpcs].sort(() => Math.random() - 0.5)
+        const selectedAllies = shuffled.slice(0, allyCount)
+
+        selectedAllies.forEach(ally => {
+          // 添加双向盟友关系
+          if (!npc.allies!.includes(ally.id)) {
+            npc.allies!.push(ally.id)
+          }
+
+          // 确保盟友也有盟友列表
+          if (!ally.allies) {
+            ally.allies = []
+          }
+
+          // 确保双向关系
+          if (!ally.allies.includes(npc.id)) {
+            ally.allies.push(npc.id)
+          }
+        })
+      }
+    })
+  }
+
+  // 组件挂载时初始化NPC盟友
+  onMounted(() => {
+    initializeNPCAllies()
+  })
 
   // 分页状态
   const ITEMS_PER_PAGE = 20

@@ -97,8 +97,8 @@ export const shouldNPCSpyPlayer = (npc: NPC, player: Player, currentTime: number
       return Math.random() < 0.5
     }
     if (relation.status === RelationStatus.Hostile) {
-      // 敌对NPC侦查频率提高50%
-      return Math.random() < 1.5
+      // 敌对NPC必定侦查
+      return true
     }
   }
 
@@ -695,13 +695,19 @@ export const forceNPCSpyAndAttack = (
     return { spyMission, attackMission: null }
   }
 
-  const { spyReport } = processNPCSpyArrival(npc, spyMission, targetPlanet, player)
+  const { spyReport, spiedNotification } = processNPCSpyArrival(npc, spyMission, targetPlanet, player)
 
   // 保存侦查报告到NPC
   if (!npc.playerSpyReports) {
     npc.playerSpyReports = {}
   }
   npc.playerSpyReports[targetPlanet.id] = spyReport
+
+  // 添加被侦查通知给玩家
+  if (!player.spiedNotifications) {
+    player.spiedNotifications = []
+  }
+  player.spiedNotifications.push(spiedNotification)
 
   // 3. 立即发起攻击
   const attackMission = forceNPCAttackPlayer(npc, player, allPlanets, targetPlanetIndex)
@@ -713,7 +719,7 @@ export const forceNPCSpyAndAttack = (
  * 测试函数：加速舰队任务到达时间
  * 将任务的到达时间设置为现在+指定秒数
  */
-export const accelerateNPCMission = (npc: NPC, missionId: string, arriveInSeconds = 5): boolean => {
+export const accelerateNPCMission = (npc: NPC, missionId: string, arriveInSeconds = 5, player?: Player): boolean => {
   if (!npc.fleetMissions) {
     console.error('[Test] NPC has no fleet missions')
     return false
@@ -726,7 +732,19 @@ export const accelerateNPCMission = (npc: NPC, missionId: string, arriveInSecond
   }
 
   const now = Date.now()
-  mission.arrivalTime = now + arriveInSeconds * 1000
+  const flightTime = arriveInSeconds * 1000 // 飞行时间（毫秒）
+
+  // 同时修改 departureTime 和 arrivalTime，保持飞行时间为指定秒数
+  mission.departureTime = now
+  mission.arrivalTime = now + flightTime
+
+  // 同时更新对应的 IncomingFleetAlert
+  if (player && player.incomingFleetAlerts) {
+    const alert = player.incomingFleetAlerts.find(a => a.id === missionId)
+    if (alert) {
+      alert.arrivalTime = mission.arrivalTime
+    }
+  }
 
   return true
 }
@@ -734,21 +752,34 @@ export const accelerateNPCMission = (npc: NPC, missionId: string, arriveInSecond
 /**
  * 测试函数：加速所有NPC舰队任务
  */
-export const accelerateAllNPCMissions = (npc: NPC, arriveInSeconds = 5): number => {
+export const accelerateAllNPCMissions = (npc: NPC, arriveInSeconds = 5, player?: Player): number => {
   if (!npc.fleetMissions) {
     console.error('[Test] NPC has no fleet missions')
     return 0
   }
 
   const now = Date.now()
+  const flightTime = arriveInSeconds * 1000
   let count = 0
 
   npc.fleetMissions.forEach(mission => {
     if (mission.status === 'outbound') {
-      mission.arrivalTime = now + arriveInSeconds * 1000
+      // 同时修改 departureTime 和 arrivalTime
+      mission.departureTime = now
+      mission.arrivalTime = now + flightTime
+
+      // 同时更新对应的 IncomingFleetAlert
+      if (player && player.incomingFleetAlerts) {
+        const alert = player.incomingFleetAlerts.find(a => a.id === mission.id)
+        if (alert) {
+          alert.arrivalTime = mission.arrivalTime
+        }
+      }
+
       count++
     } else if (mission.status === 'returning' && mission.returnTime) {
-      mission.returnTime = now + arriveInSeconds * 1000
+      // 对于返回任务，保持原来的逻辑
+      mission.returnTime = now + flightTime
       count++
     }
   })
