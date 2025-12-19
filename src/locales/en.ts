@@ -45,7 +45,9 @@ export default {
     current: 'Current',
     level: 'Level',
     gmModeActivated: 'GM Mode Activated! Check the navigation menu.',
-    view: 'View'
+    view: 'View',
+    exitConfirmTitle: 'Exit Game',
+    exitConfirmMessage: 'Are you sure you want to exit? Your progress is saved automatically.'
   },
   errors: {
     requirementsNotMet: 'Requirements not met',

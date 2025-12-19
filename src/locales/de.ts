@@ -46,7 +46,9 @@ export default {
     current: 'Aktuell',
     level: 'Stufe',
     gmModeActivated: 'GM-Modus aktiviert! Überprüfen Sie das Navigationsmenü.',
-    view: 'Anzeigen'
+    view: 'Anzeigen',
+    exitConfirmTitle: 'Spiel beenden',
+    exitConfirmMessage: 'Möchten Sie das Spiel wirklich beenden? Ihr Fortschritt wird automatisch gespeichert.'
   },
   errors: {
     requirementsNotMet: 'Anforderungen nicht erfüllt',

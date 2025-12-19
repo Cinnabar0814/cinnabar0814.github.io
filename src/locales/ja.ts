@@ -46,7 +46,9 @@ export default {
     current: '現在',
     level: 'レベル',
     gmModeActivated: 'GMモードが有効になりました！ナビゲーションメニューをご確認ください。',
-    view: '表示'
+    view: '表示',
+    exitConfirmTitle: 'ゲーム終了',
+    exitConfirmMessage: 'ゲームを終了しますか？進行状況は自動的に保存されます。'
   },
   errors: {
     requirementsNotMet: '前提条件を満たしていません',

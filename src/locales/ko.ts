@@ -46,7 +46,9 @@ export default {
     current: '현재',
     level: '레벨',
     gmModeActivated: 'GM 모드가 활성화되었습니다! 탐색 메뉴를 확인하세요.',
-    view: '보기'
+    view: '보기',
+    exitConfirmTitle: '게임 종료',
+    exitConfirmMessage: '게임을 종료하시겠습니까? 진행 상황은 자동으로 저장됩니다.'
   },
   errors: {
     requirementsNotMet: '전제 조건 미충족',

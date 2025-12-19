@@ -46,7 +46,9 @@ export default {
     current: '當前',
     level: '等級',
     gmModeActivated: 'GM 模式已啟用！請查看導航選單。',
-    view: '查看'
+    view: '查看',
+    exitConfirmTitle: '退出遊戲',
+    exitConfirmMessage: '確定要退出遊戲嗎？遊戲進度會自動儲存。'
   },
   errors: {
     requirementsNotMet: '不滿足前置條件',

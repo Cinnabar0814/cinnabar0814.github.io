@@ -428,6 +428,20 @@
       </DialogContent>
     </Dialog>
   </SidebarProvider>
+
+  <!-- Android 退出确认对话框 -->
+  <AlertDialog v-model:open="exitDialogOpen">
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>{{ t('common.exitConfirmTitle') }}</AlertDialogTitle>
+        <AlertDialogDescription>{{ t('common.exitConfirmMessage') }}</AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogCancel>{{ t('common.cancel') }}</AlertDialogCancel>
+        <AlertDialogAction @click="exitApp">{{ t('common.confirm') }}</AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
 </template>
 
 <script setup lang="ts">
@@ -528,6 +542,8 @@
   import { checkLatestVersion } from '@/utils/versionCheck'
   import { StarsBackground } from '@/components/ui/bg-stars'
   import { ParticlesBg } from '@/components/ui/particles-bg'
+  import { App as CapacitorApp } from '@capacitor/app'
+  import { Capacitor } from '@capacitor/core'
 
   // 执行数据迁移（在 store 初始化之前）
   migrateGameData()
@@ -570,6 +586,8 @@
   const renameDialogOpen = ref(false)
   const renamingPlanetId = ref<string | null>(null)
   const newPlanetName = ref('')
+  // Android 退出确认对话框状态
+  const exitDialogOpen = ref(false)
   // 功能解锁要求配置
   const featureRequirements: Record<string, { building: BuildingType; level: number }> = {
     '/research': { building: BuildingType.ResearchLab, level: 1 },
@@ -2072,6 +2090,17 @@
           }
         })
       }
+      // Android 返回键退出确认
+      if (Capacitor.isNativePlatform()) {
+        CapacitorApp.addListener('backButton', ({ canGoBack }) => {
+          if (canGoBack) {
+            router.back()
+          } else {
+            exitDialogOpen.value = true
+          }
+        })
+      }
+
       // 启动版本检查定时器（每5分钟被动检查一次）
       versionCheckInterval.value = setInterval(async () => {
         const versionInfo = await checkLatestVersion(gameStore.player.lastVersionCheckTime || 0, (time: number) => {
@@ -2107,7 +2136,16 @@
     // 移除队列取消事件监听
     window.removeEventListener('cancel-build', handleCancelBuildEvent as EventListener)
     window.removeEventListener('cancel-research', handleCancelResearchEvent as EventListener)
+    // 移除 Android 返回键监听
+    if (Capacitor.isNativePlatform()) {
+      CapacitorApp.removeAllListeners()
+    }
   })
+
+  // Android 退出应用
+  const exitApp = () => {
+    CapacitorApp.exitApp()
+  }
 </script>
 
 <style scoped>

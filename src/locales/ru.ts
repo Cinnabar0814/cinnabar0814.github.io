@@ -46,7 +46,9 @@ export default {
     current: 'Текущий',
     level: 'Уровень',
     gmModeActivated: 'Режим GM активирован! Проверьте навигационное меню.',
-    view: 'Просмотр'
+    view: 'Просмотр',
+    exitConfirmTitle: 'Выйти из игры',
+    exitConfirmMessage: 'Вы уверены, что хотите выйти? Прогресс сохраняется автоматически.'
   },
   errors: {
     requirementsNotMet: 'Требования не выполнены',

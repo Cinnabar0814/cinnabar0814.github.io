@@ -45,7 +45,9 @@ export default {
     current: '当前',
     level: '等级',
     gmModeActivated: 'GM 模式已激活！请查看导航菜单。',
-    view: '查看'
+    view: '查看',
+    exitConfirmTitle: '退出游戏',
+    exitConfirmMessage: '确定要退出游戏吗？游戏进度会自动保存。'
   },
   errors: {
     requirementsNotMet: '不满足前置条件',
