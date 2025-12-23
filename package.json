@@ -8,7 +8,7 @@
     "email": "1962257451@qq.com"
   },
   "private": true,
-  "version": "1.4.0",
+  "version": "1.5.0",
   "buildDate": "2025/12/24 01:51:29",
   "main": "dist-electron/main.js",
   "type": "module",
