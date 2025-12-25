@@ -72,13 +72,14 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      # 缓存 Gradle 依赖 (可节省 3-5 分钟)
+      # 缓存 Gradle 依赖和构建缓存
       - name: Cache Gradle
         uses: actions/cache@v4
         with:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
+            ~/.gradle/build-cache
           key: gradle-${{ runner.os }}-${{ hashFiles('android/**/*.gradle*', 'android/**/gradle-wrapper.properties') }}
           restore-keys: |
             gradle-${{ runner.os }}-
@@ -118,7 +119,7 @@ jobs:
         working-directory: android
         run: |
           chmod +x ./gradlew
-          ./gradlew assembleRelease --no-daemon
+          ./gradlew assembleRelease --build-cache
 
       - name: Upload APK Artifacts
         uses: actions/upload-artifact@v4
@@ -180,7 +181,7 @@ jobs:
 
   # 4. 发布 Release
   release:
-    needs: [ build-server, build-android, build-electron ]
+    needs: [build-server, build-android, build-electron]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -201,18 +202,18 @@ jobs:
       - name: Flatten and Rename Assets
         run: |
           mkdir -p ./final-release
-          
+
           # 移动 Server 文件并确保名字唯一
           cp ./raw-assets/server-windows-amd64/OGame-Vue-Ts-server-win.exe ./final-release/OGame-Vue-Ts-server-win.exe || cp ./raw-assets/server-windows-amd64/server-windows-amd64.exe ./final-release/OGame-Vue-Ts-server-win.exe || true
           cp ./raw-assets/server-linux-amd64/OGame-Vue-Ts-server-linux ./final-release/OGame-Vue-Ts-server-linux || true
           cp ./raw-assets/server-linux-arm64/OGame-Vue-Ts-server-linux-arm64 ./final-release/OGame-Vue-Ts-server-linux-arm64 || true
-          
+
           # 移动 Electron 安装包 (排除 unpacked 目录)
           find ./raw-assets/electron-* -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.AppImage" -o -name "*.zip" \) -exec cp {} ./final-release/ \;
 
           # 移动 Android APK
           find ./raw-assets/android-apk -type f -name "*.APK" -exec cp {} ./final-release/ \; || true
-          
+
           # 检查结果
           echo "Final assets to upload:"
           ls -R ./final-release
