@@ -32,7 +32,7 @@
           </TabsTrigger>
         </TabsList>
 
-        <ScrollArea class="h-[420px]">
+        <ScrollArea class="h-auto max-h-96">
           <TabsContent v-for="tab in tabConfig" :key="tab.value" :value="tab.value" class="mt-0">
             <Empty v-if="tab.items.length === 0" class="border-0">
               <EmptyContent>
