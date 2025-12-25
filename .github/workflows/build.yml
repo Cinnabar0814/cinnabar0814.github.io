@@ -119,7 +119,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: android/app/build/outputs/apk/release/*.APK
+          path: android/app/build/outputs/apk/release/*.apk
 
   # 3. 构建 Electron 客户端
   build-electron:
@@ -206,7 +206,7 @@ jobs:
           find ./raw-assets/electron-* -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.AppImage" -o -name "*.zip" \) -exec cp {} ./final-release/ \;
 
           # 移动 Android APK
-          find ./raw-assets/android-apk -type f -name "*.APK" -exec cp {} ./final-release/ \; || true
+          find ./raw-assets/android-apk -type f -name "*.apk" -exec cp {} ./final-release/ \; || true
 
           # 检查结果
           echo "Final assets to upload:"
@@ -217,7 +217,7 @@ jobs:
         run: |
           VERSION=${{ steps.get_version.outputs.VERSION }}
           # 获取 release 中的现有 assets 并删除 APK 文件
-          gh release view "$VERSION" --json assets -q '.assets[].name' 2>/dev/null | grep -i '\.APK$' | while read asset; do
+          gh release view "$VERSION" --json assets -q '.assets[].name' 2>/dev/null | grep -i '\.apk$' | while read asset; do
             echo "Deleting existing asset: $asset"
             gh release delete-asset "$VERSION" "$asset" -y || true
           done
