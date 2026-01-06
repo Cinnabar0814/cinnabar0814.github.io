@@ -399,10 +399,8 @@
   import WebDAVFileListDialog from '@/components/settings/WebDAVFileListDialog.vue'
   import { useHints } from '@/composables/useHints'
   import { uploadToWebDAV, downloadFromWebDAV } from '@/services/webdavService'
-  import { createSaveSystem } from '@/services/saveSystem'
 
   const { t } = useI18n()
-  const saveSystem = createSaveSystem()
   const { hintsEnabled, setHintsEnabled, resetHints } = useHints()
   const gameStore = useGameStore()
 
@@ -570,10 +568,27 @@
     try {
       isExporting.value = true
 
-      // 使用 SaveSystem 导出（带版本号的 SaveEnvelope 格式）
-      const jsonString = saveSystem.exportSave()
+      // 获取游戏数据
+      const gameData = localStorage.getItem(pkg.name)
+      // 获取地图数据
+      const universeData = localStorage.getItem(`${pkg.name}-universe`)
+      // 获取npc数据
+      const npcData = localStorage.getItem(`${pkg.name}-npcs`)
+
+      if (!gameData) {
+        toast.error(t('settings.exportFailed'))
+        return
+      }
+
+      // 合并数据
+      const exportData = {
+        game: gameData,
+        npcs: npcData,
+        universe: universeData || null
+      }
 
       const fileName = `${pkg.name}-${new Date().toISOString().slice(0, 10)}-${Date.now()}.json`
+      const jsonString = JSON.stringify(exportData, null, 2)
 
       // Android 保存到公共 Downloads 目录
       if (Capacitor.isNativePlatform()) {
@@ -628,12 +643,33 @@
   const importData = async (file: File) => {
     try {
       const reader = new FileReader()
-      reader.onload = async e => {
+      reader.onload = e => {
         try {
           const result = e.target?.result
           if (typeof result === 'string') {
-            // 使用 SaveSystem 导入（支持新旧格式自动转换和迁移）
-            await saveSystem.importSave(result)
+            const importData = JSON.parse(result)
+
+            // 兼容旧版本：如果是旧格式（直接是字符串），只导入游戏数据
+            if (typeof importData === 'string' || !importData.game) {
+              localStorage.setItem(pkg.name, result)
+              toast.success(t('settings.importSuccess'))
+              setTimeout(() => window.location.reload(), 1000)
+              return
+            }
+
+            // 新格式：分别导入游戏数据和地图数据
+            if (importData.game) {
+              localStorage.setItem(pkg.name, importData.game)
+            }
+
+            if (importData.universe) {
+              localStorage.setItem(`${pkg.name}-universe`, importData.universe)
+            }
+
+            if (importData.npcs) {
+              localStorage.setItem(`${pkg.name}-npcs`, importData.npcs)
+            }
+
             toast.success(t('settings.importSuccess'))
             // 延迟刷新页面以让toast显示
             setTimeout(() => window.location.reload(), 1000)
@@ -742,8 +778,24 @@
 
     isWebDAVUploading.value = true
     try {
-      // 使用 SaveSystem 导出（带版本号的 SaveEnvelope 格式）
-      const jsonString = saveSystem.exportSave()
+      // 获取游戏数据
+      const gameData = localStorage.getItem(pkg.name)
+      const universeData = localStorage.getItem(`${pkg.name}-universe`)
+      const npcData = localStorage.getItem(`${pkg.name}-npcs`)
+
+      if (!gameData) {
+        toast.error(t('settings.exportFailed'))
+        return
+      }
+
+      // 合并数据
+      const exportData = {
+        game: gameData,
+        npcs: npcData,
+        universe: universeData || null
+      }
+
+      const jsonString = JSON.stringify(exportData, null, 2)
       const result = await uploadToWebDAV(webdavConfig.value, jsonString)
 
       if (result.success) {
@@ -777,10 +829,25 @@
       showConfirmDialog.value = true
       gameStore.isPaused = true
 
-      confirmCallback = async () => {
+      confirmCallback = () => {
         try {
-          // 使用 SaveSystem 导入（支持新旧格式自动转换和迁移）
-          await saveSystem.importSave(result.data!)
+          const importData = JSON.parse(result.data!)
+
+          // 兼容旧版本格式
+          if (typeof importData === 'string' || !importData.game) {
+            localStorage.setItem(pkg.name, result.data!)
+          } else {
+            if (importData.game) {
+              localStorage.setItem(pkg.name, importData.game)
+            }
+            if (importData.universe) {
+              localStorage.setItem(`${pkg.name}-universe`, importData.universe)
+            }
+            if (importData.npcs) {
+              localStorage.setItem(`${pkg.name}-npcs`, importData.npcs)
+            }
+          }
+
           toast.success(t('settings.importSuccess'))
           setTimeout(() => window.location.reload(), 1000)
         } catch (error) {
